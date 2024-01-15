@@ -93,7 +93,7 @@ vault kv put ${tls_skip} -mount=secrets dex-config config.yaml="$(cat `local_or_
 # vault kv put ${tls_skip} -mount=secrets git-provider-credentials GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID} GITLAB_CLIENT_SECRET=${GITLAB_CLIENT_SECRET} \
 #       GITLAB_HOSTNAME=${GITLAB_HOSTNAME} GIT_HOST_TYPE=${GIT_HOST_TYPE}
 
-# vault kv put ${tls_skip} -mount=secrets zwaawn4m5 clientID=wge clientSecret=${WGE_DEX_CLIENT_SECRET}
+vault kv put ${tls_skip} -mount=secrets wge-oidc-auth clientID=wge clientSecret=${WGE_DEX_CLIENT_SECRET}
 
 vault kv put ${tls_skip} -mount=secrets github-repo-read-credentials username=token password=${GITHUB_TOKEN_READ}
 
