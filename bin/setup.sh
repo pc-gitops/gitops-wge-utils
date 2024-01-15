@@ -313,6 +313,7 @@ if [ "$aws_capi" == "true" ]; then
   clusterctl init --infrastructure aws
 else
   rm -rf mgmt-cluster/flux/capa.yaml
+  git add mgmt-cluster/flux/capa.yaml
   if [[ `git status --porcelain` ]]; then
     git commit -m "remove capa"
     git pull
@@ -358,6 +359,7 @@ if [ "$azure_capi" == "true" ]; then
   clusterctl init --infrastructure azure
 else
   rm -rf mgmt-cluster/flux/capz.yaml
+  git add mgmt-cluster/flux/capz.yaml
   if [[ `git status --porcelain` ]]; then
     git commit -m "remove capz"
     git pull
