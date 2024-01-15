@@ -312,12 +312,14 @@ if [ "$aws_capi" == "true" ]; then
 
   clusterctl init --infrastructure aws
 else
-  rm -rf mgmt-cluster/flux/capa.yaml
-  git add mgmt-cluster/flux/capa.yaml
-  if [[ `git status --porcelain` ]]; then
-    git commit -m "remove capa"
-    git pull
-    git push    
+  if [ -f mgmt-cluster/flux/capa.yaml ]; then
+    rm -rf mgmt-cluster/flux/capa.yaml
+    git add mgmt-cluster/flux/capa.yaml
+    if [[ `git status --porcelain` ]]; then
+      git commit -m "remove capa"
+      git pull
+      git push
+    fi
   fi
 fi
 
@@ -330,6 +332,12 @@ if [ "$azure_capi" == "true" ]; then
     git pull
     git push
   fi
+
+  if [ ! -f resources/azure-secrets.sh ]; then
+    echo "Azure secrets file not found"
+    exit 1
+  fi
+
   source resources/azure-secrets.sh
 
   export AZURE_SUBSCRIPTION_ID="$subscription_id"
@@ -358,18 +366,14 @@ if [ "$azure_capi" == "true" ]; then
   # Finally, initialize the management cluster
   clusterctl init --infrastructure azure
 else
-  rm -rf mgmt-cluster/flux/capz.yaml
-  git add mgmt-cluster/flux/capz.yaml
-  if [[ `git status --porcelain` ]]; then
-    git commit -m "remove capz"
-    git pull
-    git push
-  fi
-
-
-  if [ ! -f resources/azure-secrets.sh ]; then
-    echo "Azure secrets file not found"
-    exit 1
+  if [ -f mgmt-cluster/flux/capz.yaml ]; then
+    rm -rf mgmt-cluster/flux/capz.yaml
+    git add mgmt-cluster/flux/capz.yaml
+    if [[ `git status --porcelain` ]]; then
+      git commit -m "remove capz"
+      git pull
+      git push
+    fi
   fi
 fi
 
