@@ -53,8 +53,12 @@ args "$@"
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 source $SCRIPT_DIR/envs.sh
 
-aws-secrets.sh $debug_str $script_tls_skip --aws-dir ${aws_dir} --aws-credentials ${aws_credentials}
-azure-secrets.sh $debug_str
+if [ "$aws" == "true" ]; then
+  aws-secrets.sh $debug_str $script_tls_skip --aws-dir ${aws_dir} --aws-credentials ${aws_credentials}
+fi
+if [ "$azure" == "true" ]; then
+  azure-secrets.sh $debug_str
+fi
 
 # this is the token for the vault admin user, create a more restricted token for use in default namespace
 vault kv put ${tls_skip} -mount=secrets test-one-vault-token vault_token=${VAULT_TOKEN}

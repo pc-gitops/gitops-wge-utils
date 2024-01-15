@@ -206,10 +206,14 @@ if [ "$aws" == "true" ]; then
 fi
 
 if [ "$aws" == "true" ]; then
-  cp $(local_or_global resources/aws/flux/)* mgmt-cluster/flux/
-  cp $(local_or_global resources/aws/templates/)* mgmt-cluster/templates/
+  cp $(local_or_global resources/aws/flux/)* mgmt-cluster/flux/aws
+  mkdir -p mgmt-cluster/templates/aws
+  cp $(local_or_global resources/aws/templates/)* mgmt-cluster/templates/aws
   git add mgmt-cluster/flux
-  git add mgmt-cluster/templates
+  git add mgmt-cluster/templates/aws
+else
+  rm -rf mgmt-cluster/flux/aws-flux.yaml
+  rm -rf mgmt-cluster/templates/aws
 fi
 
 if [ "$capi" == "true" ]; then
@@ -307,6 +311,13 @@ if [ "$aws_capi" == "true" ]; then
   export EXP_CLUSTER_RESOURCE_SET=true
 
   clusterctl init --infrastructure aws
+else
+  rm -rf mgmt-cluster/flux/capa.yaml
+  if [[ `git status --porcelain` ]]; then
+    git commit -m "remove capa"
+    git pull
+    git push    
+  fi
 fi
 
 if [ "$azure_capi" == "true" ]; then
@@ -318,35 +329,46 @@ if [ "$azure_capi" == "true" ]; then
     git pull
     git push
   fi
+  source resources/azure-secrets.sh
 
-# Create an Azure Service Principal and paste the output here
-source resources/azure-secrets.sh
+  export AZURE_SUBSCRIPTION_ID="$subscription_id"
+  export AZURE_TENANT_ID="$tenant_id"
+  export AZURE_CLIENT_ID="$client_id"
+  export AZURE_CLIENT_SECRET="$client_secret"
 
-export AZURE_SUBSCRIPTION_ID="$subscription_id"
-export AZURE_TENANT_ID="$tenant_id"
-export AZURE_CLIENT_ID="$client_id"
-export AZURE_CLIENT_SECRET="$client_secret"
 
-# Base64 encode the variables
-export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
-export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
-export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
-export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
+  # Base64 encode the variables
+  export AZURE_SUBSCRIPTION_ID_B64="$(echo -n "$AZURE_SUBSCRIPTION_ID" | base64 | tr -d '\n')"
+  export AZURE_TENANT_ID_B64="$(echo -n "$AZURE_TENANT_ID" | base64 | tr -d '\n')"
+  export AZURE_CLIENT_ID_B64="$(echo -n "$AZURE_CLIENT_ID" | base64 | tr -d '\n')"
+  export AZURE_CLIENT_SECRET_B64="$(echo -n "$AZURE_CLIENT_SECRET" | base64 | tr -d '\n')"
 
-# Settings needed for AzureClusterIdentity used by the AzureCluster
-export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
-export CLUSTER_IDENTITY_NAME="cluster-identity"
-export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
+  # Settings needed for AzureClusterIdentity used by the AzureCluster
+  export AZURE_CLUSTER_IDENTITY_SECRET_NAME="cluster-identity-secret"
+  export CLUSTER_IDENTITY_NAME="cluster-identity"
+  export AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE="default"
 
-# Create a secret to include the password of the Service Principal identity created in Azure
-# This secret will be referenced by the AzureClusterIdentity used by the AzureCluster
-set +e
-kubectl create secret generic "${AZURE_CLUSTER_IDENTITY_SECRET_NAME}" --from-literal=clientSecret="${AZURE_CLIENT_SECRET}" --namespace "${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}"
-set -e
+  # Create a secret to include the password of the Service Principal identity created in Azure
+  # This secret will be referenced by the AzureClusterIdentity used by the AzureCluster
+  set +e
+  kubectl create secret generic "${AZURE_CLUSTER_IDENTITY_SECRET_NAME}" --from-literal=clientSecret="${AZURE_CLIENT_SECRET}" --namespace "${AZURE_CLUSTER_IDENTITY_SECRET_NAMESPACE}"
+  set -e
 
-# Finally, initialize the management cluster
-clusterctl init --infrastructure azure
+  # Finally, initialize the management cluster
+  clusterctl init --infrastructure azure
+else
+  rm -rf mgmt-cluster/flux/capz.yaml
+  if [[ `git status --porcelain` ]]; then
+    git commit -m "remove capz"
+    git pull
+    git push
+  fi
 
+
+  if [ ! -f resources/azure-secrets.sh ]; then
+    echo "Azure secrets file not found"
+    exit 1
+  fi
 fi
 
 # Wait for dex to start:
