@@ -13,7 +13,7 @@ function usage()
     echo "  --debug: emmit debugging information" >&2
     echo "  --flux-bootstrap: force flux bootstrap" >&2
     echo "  --flux-reset: unistall flux before reinstall" >&2
-    echo "  --cluster-type: the cluster type for Linux, k0s or kind, defaults to k0s" >&2
+    echo "  --cluster-type: the cluster type for Linux, only supports kind" >&2
     echo "  --no-wait: do not wait for flux to be ready" >&2
     echo "  --install: install software required by kind cluster deployment" >&2
 }
@@ -25,7 +25,7 @@ function args()
   bootstrap=0
   reset=0
   debug_str=""
-  cluster_type="k0s"
+  cluster_type=""
   arg_list=( "$@" )
   arg_count=${#arg_list[@]}
   arg_index=0
@@ -218,13 +218,11 @@ fi
 
 if [ "$capi" == "true" ]; then
   [ -d mgmt-cluster/flux ] || mkdir -p mgmt-cluster/flux
-  [ -d mgmt-cluster/namespace ] || mkdir -p mgmt-cluster/namespace
   [ -d mgmt-cluster/config ] || mkdir -p mgmt-cluster/config
   cp $(local_or_global resources/capi/operator/)* mgmt-cluster/flux/
   cp $(local_or_global resources/capi/flux/)* mgmt-cluster/flux/
   cp $(local_or_global resources/capi/namespace/)* mgmt-cluster/namespace/
   git add mgmt-cluster/flux
-  git add mgmt-cluster/namespace
 fi
 
 export namespace=flux-system
@@ -292,7 +290,7 @@ else
   fi
 fi
 
-secrets.sh $debug_str --tls-skip --wge-entitlement $PWD/resources/wge-entitlement.yaml --secrets $PWD/resources/github-secrets.sh --aws-credentials $aws_credentials
+secrets.sh $debug_str --tls-skip --secrets $PWD/resources/github-secrets.sh --aws-credentials $aws_credentials
 
 if [ "$aws_capi" == "true" ]; then
   clusterawsadm bootstrap iam create-cloudformation-stack --config $(local_or_global resources/clusterawsadm.yaml) --region $AWS_REGION
@@ -380,12 +378,9 @@ fi
 # Wait for dex to start:
 kubectl wait --timeout=5m --for=condition=Ready kustomization/dex -n flux-system
 
-# Wait for WGE to start:
-kubectl wait --timeout=10m --for=condition=Ready kustomization/wge -n flux-system
-
-# set +e
-# vault-oidc-config.sh
-# set -e
+set +e
+vault-oidc-config.sh
+set -e
 
 if [ "$aws" == "true" ]; then
   if [ "$wait" == "1" ]; then
